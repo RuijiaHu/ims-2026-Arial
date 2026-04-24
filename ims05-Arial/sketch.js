@@ -8,6 +8,16 @@
 //https://editor.p5js.org/rh3900/sketches/25k0XH6sn
 //Ruijia Hu Arial
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAR0ket_gSc2vVQShLtqIfx1b_nnYhr6yo",
+  authDomain: "star-45c8e.firebaseapp.com",
+  databaseURL: "https://star-45c8e-default-rtdb.firebaseio.com",
+  projectId: "star-45c8e",
+  storageBucket: "star-45c8e.firebasestorage.app",
+  messagingSenderId: "545647656558",
+  appId: "1:545647656558:web:5bffe5500486d34948707f"
+};
+
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
   [0,5],[5,6],[6,7],[7,8],
@@ -116,6 +126,21 @@ function setup() {
 
   bodyPose = ml5.bodyPose("MoveNet", { flipped: false }, modelReady);
   handPose = ml5.handPose({ flipped: false }, handModelReady);
+
+  // listen for new stars pushed from mobile
+  db.ref("stars").on("child_added", (snapshot) => {
+    let data = snapshot.val();
+    miniStars.push(
+      new Star(
+        random(100, width - 100),
+        random(100, height - 100),
+        data.size,
+        true,
+        data.hue,
+        data.initials
+      )
+    );
+  });
 }
 
 
@@ -323,9 +348,10 @@ class Star {
     this.noiseOffsetX = random(10000);
     this.noiseOffsetY = random(10000);
     this.noiseSpeed = isMini ? random(0.002, 0.007) : 0.004;
+    this.initials = initials;
 
     if (isMini) {
-      this.starColor = color(random(360), 80, 100);
+      this.starColor = color(hue !== null ? hue : random(360), 80, 100);
     }
   }
 
@@ -416,5 +442,31 @@ class Star {
       curveVertex(this.nodeX[i], this.nodeY[i]);
     }
     endShape(CLOSE);
+
+     // draw initials if this star has them
+    if (this.initials) {
+      colorMode(RGB);
+      fill(0, 0, 0, 180);
+      noStroke();
+      let fontSize = this.initials.length > 2 ? 
+        this.radius * 0.5 : this.radius * 0.7;
+      textSize(fontSize);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      text(this.initials, this.centerX, this.centerY);
+      colorMode(HSB, 360, 100, 100, 100);
+    } // draw initials if this star has them
+    if (this.initials) {
+      colorMode(RGB);
+      fill(0, 0, 0, 180);
+      noStroke();
+      let fontSize = this.initials.length > 2 ? 
+        this.radius * 0.5 : this.radius * 0.7;
+      textSize(fontSize);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      text(this.initials, this.centerX, this.centerY);
+      colorMode(HSB, 360, 100, 100, 100);
+    }
   }
 }
