@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymous confession room</title>
+    <style>
+        body { padding: 30px; font-family: sans-serif; background: #121212; color: #eee; text-align: center; }
+        h2 { margin-bottom: 30px; }
+        textarea { 
+            width: 100%; height: 200px; font-size: 18px; border-radius: 12px; 
+            padding: 15px; box-sizing: border-box; border: 1px solid #444; 
+            background: #1e1e1e; color: #fff;
+        }
+        button { 
+            width: 100%; padding: 18px; margin-top: 25px; background: #ff4757; 
+            color: #fff; border: none; border-radius: 12px; font-size: 20px; font-weight: bold;
+        }
+        button:active { background: #ff6b81; transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <h2>write down your confession</h2>
+    <textarea id="textInput" placeholder="No one knows who you are..."></textarea>
+    <button id="sendBtn">Send</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqaCKdOVw2FgsgrIUxa8ShseTz4O95dgM",
+            authDomain: "irlurlfinal.firebaseapp.com",
+            databaseURL: "https://irlurlfinal-default-rtdb.firebaseio.com",
+            projectId: "irlurlfinal",
+            storageBucket: "irlurlfinal.firebasestorage.app",
+            messagingSenderId: "611628383887",
+            appId: "1:611628383887:web:09e851f8defc13d72ffafa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.getElementById('sendBtn').onclick = function() {
+            const text = document.getElementById('textInput').value;
+            if(!text.trim()) return alert("No empty confessions allowed!");
+
+            const listRef = ref(db, 'confessions');
+            const newPostRef = push(listRef);
+            
+            set(newPostRef, {
+                content: text,
+                time: Date.now()
+            }).then(() => {
+                alert("Confession sent successfully!");
+                document.getElementById('textInput').value = "";
+            }).catch((err) => {
+                alert("send failed, please try again.");
+                console.error(err);
+            });
+        };
+    </script>
+</body>
+</html>

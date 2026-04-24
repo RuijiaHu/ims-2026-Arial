@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>实时忏悔墙 - 展示端</title>
+    <style>
+        body { 
+            background: #000; color: #fff; 
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif; 
+            padding: 40px; overflow-x: hidden;
+        }
+        h1 { border-bottom: 2px solid #ff4757; padding-bottom: 10px; color: #ff4757; }
+        #wall { margin-top: 30px; display: flex; flex-direction: column; }
+        .item { 
+            font-size: 2.5rem; margin-bottom: 25px; padding: 15px;
+            border-left: 8px solid #ff4757; background: rgba(255, 71, 87, 0.1);
+            animation: slideIn 0.6s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>实时忏悔墙</h1>
+    <div id="wall"></div>
+
+    <script type="module">
+        // 引入 Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 你的专属配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqaCKdOVw2FgsgrIUxa8ShseTz4O95dgM",
+            authDomain: "irlurlfinal.firebaseapp.com",
+            databaseURL: "https://irlurlfinal-default-rtdb.firebaseio.com",
+            projectId: "irlurlfinal",
+            storageBucket: "irlurlfinal.firebasestorage.app",
+            messagingSenderId: "611628383887",
+            appId: "1:611628383887:web:09e851f8defc13d72ffafa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const wall = document.getElementById('wall');
+
+        // 核心：监听新数据
+        onChildAdded(ref(db, 'confessions'), (data) => {
+            const msg = data.val().content;
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerText = `“ ${msg} ”`;
+            wall.prepend(div); // 最新消息显示在最顶部
+        });
+    </script>
+</body>
+</html>
