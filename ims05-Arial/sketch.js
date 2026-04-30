@@ -35,7 +35,7 @@ let ballConstraint = null;
 let qrImg;
 
 function preload() {
-  qrImg = loadImage("QR.png");  // 文件名对上就行
+  qrImg = loadImage("QR.png");
 }
 
 
@@ -107,10 +107,6 @@ function updateBallConstraint() {
 
 let mainStar;
 let miniStars = [];
-let cycleStart = 0;
-
-const MAX_STARS = 500;
-const INTERVAL = 40;
 
 
 function setup() {
@@ -120,7 +116,18 @@ function setup() {
   noStroke();
 
   mainStar = new Star(width / 2, height / 2, 45, false);
-  cycleStart = millis();
+
+  // spawn 80 background stars immediately at startup
+  for (let i = 0; i < 80; i++) {
+    miniStars.push(
+      new Star(
+        random(100, width - 100),
+        random(100, height - 100),
+        random(15, 30),
+        true
+      )
+    );
+  }
 
   video = createCapture(VIDEO);
   video.size(640, 480);
@@ -153,28 +160,6 @@ function draw() {
 
   updateRepulsePoints();
   updateBallConstraint();
-
-  // ── spawn cycle ───────────────────────────────────────────
-  let elapsed = (millis() - cycleStart) / 1000;
-  let resetTime = MAX_STARS * INTERVAL + INTERVAL;
-
-  if (elapsed >= resetTime) {
-    miniStars = [];
-    cycleStart = millis();
-    elapsed = 0;
-  }
-
-  let needed = min(floor(elapsed / INTERVAL), MAX_STARS);
-  while (miniStars.length < needed) {
-    miniStars.push(
-      new Star(
-        random(100, width - 100),
-        random(100, height - 100),
-        random(15, 30),
-        true
-      )
-    );
-  }
 
   // ── main star ─────────────────────────────────────────────
   let mainTarget;
@@ -271,30 +256,20 @@ function draw() {
   // ── debug text ────────────────────────────────────────────
   fill(255, 120);
   textSize(13);
+  textAlign(LEFT, TOP);
 
-  text("mini stars: " + miniStars.length + " / " + MAX_STARS, 16, 22);
-
-  let inPause = miniStars.length >= MAX_STARS;
-  if (inPause) {
-    text("resetting in: " + ceil(resetTime - elapsed) + "s", 16, 40);
-  } else {
-    text("next in: " + (INTERVAL - floor(elapsed) % INTERVAL) + "s", 16, 40);
-  }
-
-  text("hour: " + hour() + "  min: " + minute(), 16, 58);
-  text("repulse pts: " + repulsePoints.length, 16, 76);
+  text("stars: " + miniStars.length, 16, 22);
+  text("hour: " + hour() + "  min: " + minute(), 16, 40);
+  text("repulse pts: " + repulsePoints.length, 16, 58);
 
   if (ballConstraint) {
-    text("ball active  r=" + ceil(ballConstraint.r), 16, 94);
+    text("ball active  r=" + ceil(ballConstraint.r), 16, 76);
   } else {
-    text("hands: " + hands.length, 16, 94);
+    text("hands: " + hands.length, 16, 76);
   }
 
-  colorMode(HSB, 360, 100, 100, 100);
-
-  // QR code — bottom left corner
+  // ── QR code — bottom left corner ─────────────────────────
   if (qrImg) {
-    colorMode(RGB);
     noStroke();
     fill(255, 230);
     rect(12, height - 204, 184, 184, 12);
@@ -303,8 +278,9 @@ function draw() {
     textSize(11);
     textAlign(CENTER, CENTER);
     text("scan to make your star", 104, height - 24);
-    colorMode(HSB, 360, 100, 100, 100);
   }
+
+  colorMode(HSB, 360, 100, 100, 100);
 }
 
 
@@ -312,19 +288,6 @@ function keyPressed() {
   if (key === 'f' || key === 'F') {
     let fs = fullscreen();
     fullscreen(!fs);
-  }
-  if (key === 's' || key === 'S') {
-    while (miniStars.length < MAX_STARS) {
-      miniStars.push(
-        new Star(
-          random(100, width - 100),
-          random(100, height - 100),
-          random(15, 30),
-          true
-        )
-      );
-    }
-    cycleStart = millis() - MAX_STARS * INTERVAL * 1000;
   }
 }
 
