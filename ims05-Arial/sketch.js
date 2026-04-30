@@ -32,6 +32,11 @@ let poses = [];
 let hands = [];
 let repulsePoints = [];
 let ballConstraint = null;
+let qrImg;
+
+function preload() {
+  qrImg = loadImage("QR.png");  // 文件名对上就行
+}
 
 
 function modelReady() {
@@ -286,6 +291,20 @@ function draw() {
   }
 
   colorMode(HSB, 360, 100, 100, 100);
+
+  // QR code — bottom left corner
+  if (qrImg) {
+    colorMode(RGB);
+    noStroke();
+    fill(255, 230);
+    rect(12, height - 204, 184, 184, 12);
+    image(qrImg, 20, height - 196, 160, 160);
+    fill(0, 180);
+    textSize(11);
+    textAlign(CENTER, CENTER);
+    text("scan to make your star", 104, height - 24);
+    colorMode(HSB, 360, 100, 100, 100);
+  }
 }
 
 
