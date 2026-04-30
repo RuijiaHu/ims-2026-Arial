@@ -1,10 +1,6 @@
 // Source: https://p5js.org/examples/math-and-physics-soft-body/
 // Created by Ira Greenberg. Revised by Darren Kessner. From 2024 onwards, edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
 
-// Stars are repelled by body and hand keypoints.
-// When two hands face each other, all stars gather into a ball between the palms.
-// Repulsion is disabled during ball mode so stars can freely enter the ball.
-
 //https://editor.p5js.org/rh3900/sketches/25k0XH6sn
 //Ruijia Hu Arial
 
@@ -17,6 +13,9 @@ const firebaseConfig = {
   messagingSenderId: "545647656558",
   appId: "1:545647656558:web:5bffe5500486d34948707f"
 };
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
@@ -44,7 +43,6 @@ function handModelReady() {
 }
 
 
-// rebuilds repulsePoints every frame from both body and hand keypoints
 //AI Claude
 function updateRepulsePoints() {
   repulsePoints = [];
@@ -74,7 +72,6 @@ function updateRepulsePoints() {
 }
 
 
-// checks if two hands are close enough to trigger the ball effect
 //AI Claude
 function updateBallConstraint() {
   ballConstraint = null;
@@ -318,15 +315,15 @@ function windowResized() {
 
 
 // ── Star class ────────────────────────────────────────────────────────────────
-// Modified from the original p5.js soft body example
-
 class Star {
-  constructor(x, y, r = 45, isMini = false) {
+  // hue and initials are optional — only used when star comes from Firebase
+  constructor(x, y, r = 45, isMini = false, hue = null, initials = "") {
     this.centerX = x;
     this.centerY = y;
     this.baseRadius = r;
     this.radius = r;
     this.isMini = isMini;
+    this.initials = initials;
 
     this.rotAngle = -90;
     this.accelX = 0;
@@ -348,7 +345,6 @@ class Star {
     this.noiseOffsetX = random(10000);
     this.noiseOffsetY = random(10000);
     this.noiseSpeed = isMini ? random(0.002, 0.007) : 0.004;
-    this.initials = initials;
 
     if (isMini) {
       this.starColor = color(hue !== null ? hue : random(360), 80, 100);
@@ -368,14 +364,11 @@ class Star {
       this.rotAngle += 360.0 / this.nodes;
     }
 
-    // spring toward wander target
     let dx = (targetX - this.centerX) * this.springing;
     let dy = (targetY - this.centerY) * this.springing;
     this.accelX += dx;
     this.accelY += dy;
 
-    // repulsion from body + hand keypoints
-    // disabled during ball mode so stars can freely enter the ball
     //AI Claude
     if (!ballConstraint) {
       let repulseRadius = 120;
@@ -406,7 +399,6 @@ class Star {
     }
   }
 
-  // constraint is optional: { x, y, r } keeps the target inside a circle
   //AI Claude
   getWanderTarget(constraint = null) {
     this.noiseOffsetX += this.noiseSpeed;
@@ -443,24 +435,12 @@ class Star {
     }
     endShape(CLOSE);
 
-     // draw initials if this star has them
+    // draw initials if this star came from Firebase
     if (this.initials) {
       colorMode(RGB);
       fill(0, 0, 0, 180);
       noStroke();
-      let fontSize = this.initials.length > 2 ? 
-        this.radius * 0.5 : this.radius * 0.7;
-      textSize(fontSize);
-      textAlign(CENTER, CENTER);
-      textStyle(BOLD);
-      text(this.initials, this.centerX, this.centerY);
-      colorMode(HSB, 360, 100, 100, 100);
-    } // draw initials if this star has them
-    if (this.initials) {
-      colorMode(RGB);
-      fill(0, 0, 0, 180);
-      noStroke();
-      let fontSize = this.initials.length > 2 ? 
+      let fontSize = this.initials.length > 2 ?
         this.radius * 0.5 : this.radius * 0.7;
       textSize(fontSize);
       textAlign(CENTER, CENTER);
