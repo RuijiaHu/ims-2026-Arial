@@ -270,6 +270,8 @@ function draw() {
     text("hands: " + hands.length, 16, 76);
   }
 
+  text("✦ cup both hands together to gather stars", 16, 112);
+
   // ── QR code — bottom left corner ─────────────────────────
   if (qrImg) {
     noStroke();
