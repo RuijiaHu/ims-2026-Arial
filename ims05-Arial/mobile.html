@@ -32,7 +32,6 @@
       margin-top: 8px;
     }
 
-    /* ── preview canvas ── */
     #preview-wrap {
       width: 200px;
       height: 200px;
@@ -42,11 +41,8 @@
       flex-shrink: 0;
     }
 
-    #preview-wrap canvas {
-      display: block;
-    }
+    #preview-wrap canvas { display: block; }
 
-    /* ── form ── */
     .form {
       width: 100%;
       max-width: 360px;
@@ -79,9 +75,7 @@
       outline: none;
     }
 
-    input[type="text"]:focus {
-      border-color: #666;
-    }
+    input[type="text"]:focus { border-color: #666; }
 
     .initials-preview {
       font-size: 13px;
@@ -94,7 +88,6 @@
       font-weight: 600;
     }
 
-    /* color wheel */
     .color-row {
       display: flex;
       align-items: center;
@@ -143,8 +136,8 @@
       cursor: pointer;
     }
 
-    /* size slider */
-    .size-slider {
+    /* generic slider style shared by size, opacity, glow */
+    .generic-slider {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
@@ -154,7 +147,7 @@
       outline: none;
     }
 
-    .size-slider::-webkit-slider-thumb {
+    .generic-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 22px;
       height: 22px;
@@ -172,7 +165,6 @@
       margin-top: 4px;
     }
 
-    /* submit */
     button {
       background: #fff;
       color: #000;
@@ -232,8 +224,20 @@
 
     <div class="field">
       <label>Size</label>
-      <input type="range" class="size-slider" id="sizeSlider" min="15" max="45" value="30">
+      <input type="range" class="generic-slider" id="sizeSlider" min="15" max="45" value="30">
       <div class="slider-labels"><span>Small</span><span>Large</span></div>
+    </div>
+
+    <div class="field">
+      <label>Opacity</label>
+      <input type="range" class="generic-slider" id="opacitySlider" min="20" max="100" value="80">
+      <div class="slider-labels"><span>Transparent</span><span>Solid</span></div>
+    </div>
+
+    <div class="field">
+      <label>Glow</label>
+      <input type="range" class="generic-slider" id="glowSlider" min="0" max="40" value="10">
+      <div class="slider-labels"><span>None</span><span>Strong</span></div>
     </div>
 
     <button id="submitBtn" disabled>Send to the Sky ✦</button>
@@ -242,37 +246,34 @@
   </div>
 
   <script>
-    // ── Firebase config ───────────────────────────────────────
-    // YOUR CONFIG HERE
     const firebaseConfig = {
-        apiKey: "AIzaSyAR0ket_gSc2vVQShLtqIfx1b_nnYhr6yo",
-        authDomain: "star-45c8e.firebaseapp.com",
-        databaseURL: "https://star-45c8e-default-rtdb.firebaseio.com",
-        projectId: "star-45c8e",
-        storageBucket: "star-45c8e.firebasestorage.app",
-        messagingSenderId: "545647656558",
-        appId: "1:545647656558:web:5bffe5500486d34948707f"
+      apiKey: "AIzaSyAR0ket_gSc2vVQShLtqIfx1b_nnYhr6yo",
+      authDomain: "star-45c8e.firebaseapp.com",
+      databaseURL: "https://star-45c8e-default-rtdb.firebaseio.com",
+      projectId: "star-45c8e",
+      storageBucket: "star-45c8e.firebasestorage.app",
+      messagingSenderId: "545647656558",
+      appId: "1:545647656558:web:5bffe5500486d34948707f"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ── state ─────────────────────────────────────────────────
-    let currentHue = 0;       // 0–360
-    let currentSize = 30;     // 15–45
-    let currentInitials = ""; // extracted from name input
+    let currentHue      = 0;
+    let currentSize     = 30;
+    let currentInitials = "";
+    let currentOpacity  = 80;   // 20–100
+    let currentGlow     = 10;   // 0–40
 
-    // ── initials extraction ───────────────────────────────────
     function extractInitials(name) {
       return name.trim()
         .split(/\s+/)
         .filter(w => w.length > 0)
         .map(w => w[0].toUpperCase())
         .join("")
-        .slice(0, 3);  // max 3 initials
+        .slice(0, 3);
     }
 
-    // ── hsl → hex helper (for color picker sync) ─────────────
     function hslToHex(h, s, l) {
       s /= 100; l /= 100;
       const a = s * Math.min(l, 1 - l);
@@ -285,16 +286,16 @@
       ).join("");
     }
 
-    // ── DOM refs ──────────────────────────────────────────────
-    const nameInput     = document.getElementById("nameInput");
+    const nameInput       = document.getElementById("nameInput");
     const initialsDisplay = document.getElementById("initialsDisplay");
-    const colorPicker   = document.getElementById("colorPicker");
-    const hueSlider     = document.getElementById("hueSlider");
-    const sizeSlider    = document.getElementById("sizeSlider");
-    const submitBtn     = document.getElementById("submitBtn");
-    const statusEl      = document.getElementById("status");
+    const colorPicker     = document.getElementById("colorPicker");
+    const hueSlider       = document.getElementById("hueSlider");
+    const sizeSlider      = document.getElementById("sizeSlider");
+    const opacitySlider   = document.getElementById("opacitySlider");
+    const glowSlider      = document.getElementById("glowSlider");
+    const submitBtn       = document.getElementById("submitBtn");
+    const statusEl        = document.getElementById("status");
 
-    // ── event listeners ───────────────────────────────────────
     nameInput.addEventListener("input", () => {
       currentInitials = extractInitials(nameInput.value);
       initialsDisplay.textContent = currentInitials || "—";
@@ -307,7 +308,6 @@
     });
 
     colorPicker.addEventListener("input", () => {
-      // sync hue slider when color picker is used directly
       const hex = colorPicker.value;
       const r = parseInt(hex.slice(1,3),16)/255;
       const g = parseInt(hex.slice(3,5),16)/255;
@@ -326,11 +326,10 @@
       hueSlider.value = currentHue;
     });
 
-    sizeSlider.addEventListener("input", () => {
-      currentSize = parseInt(sizeSlider.value);
-    });
+    sizeSlider.addEventListener("input",    () => { currentSize    = parseInt(sizeSlider.value);    });
+    opacitySlider.addEventListener("input", () => { currentOpacity = parseInt(opacitySlider.value); });
+    glowSlider.addEventListener("input",    () => { currentGlow    = parseInt(glowSlider.value);    });
 
-    // ── submit ────────────────────────────────────────────────
     submitBtn.addEventListener("click", () => {
       if (!currentInitials) return;
 
@@ -339,9 +338,11 @@
       statusEl.className = "";
 
       const starData = {
-        initials: currentInitials,
-        hue: currentHue,
-        size: currentSize,
+        initials:  currentInitials,
+        hue:       currentHue,
+        size:      currentSize,
+        opacity:   currentOpacity,
+        glow:      currentGlow,
         timestamp: Date.now()
       };
 
@@ -349,7 +350,6 @@
         .then(() => {
           statusEl.textContent = "Your star is in the sky ✦";
           statusEl.className = "success";
-          // re-enable after 3s so user can send again
           setTimeout(() => {
             submitBtn.disabled = false;
             statusEl.textContent = "";
@@ -365,12 +365,12 @@
     // ── p5 preview ────────────────────────────────────────────
     new p5(function(p) {
       let nodes = 5;
-      let nodeX = new Array(5).fill(0);
-      let nodeY = new Array(5).fill(0);
+      let nodeX      = new Array(5).fill(0);
+      let nodeY      = new Array(5).fill(0);
       let nodeStartX = new Array(5).fill(0);
       let nodeStartY = new Array(5).fill(0);
-      let angle = new Array(5).fill(0);
-      let frequency = [];
+      let angle      = new Array(5).fill(0);
+      let frequency  = [];
       let accelX = 0, accelY = 0;
       let centerX, centerY;
       let organicConstant = 1.0;
@@ -387,15 +387,12 @@
         centerX = 100; centerY = 100;
         noiseOX = p.random(1000);
         noiseOY = p.random(1000);
-        for (let i = 0; i < 5; i++) {
-          frequency[i] = p.random(5, 12);
-        }
+        for (let i = 0; i < 5; i++) frequency[i] = p.random(5, 12);
       };
 
       p.draw = function() {
         p.background(240, 30, 8, 50);
 
-        // drift target via noise
         noiseOX += 0.005; noiseOY += 0.005;
         let tx = p.map(p.noise(noiseOX), 0, 1, 60, 140);
         let ty = p.map(p.noise(noiseOY), 0, 1, 60, 140);
@@ -409,7 +406,7 @@
         organicConstant = 1 - (Math.abs(accelX) + Math.abs(accelY)) * 0.1;
 
         rotAngle = -90;
-        let r = currentSize * (200 / 90);  // scale to preview canvas
+        let r = currentSize * (200 / 90);
         for (let i = 0; i < nodes; i++) {
           nodeStartX[i] = centerX + p.cos(rotAngle) * r;
           nodeStartY[i] = centerY + p.sin(rotAngle) * r;
@@ -423,7 +420,26 @@
         }
 
         p.curveTightness(organicConstant);
-        p.fill(currentHue, 80, 100);
+
+        // glow: draw several larger blurred copies behind the star
+        let glowLayers = Math.floor(currentGlow / 8);
+        for (let g = glowLayers; g > 0; g--) {
+          let glowR = r + g * (currentGlow * 0.3);
+          let glowAlpha = (currentOpacity / 100) * 20 * (1 - g / (glowLayers + 1));
+          p.fill(currentHue, 70, 100, glowAlpha);
+          p.curveTightness(organicConstant);
+          p.beginShape();
+          for (let i = 0; i < nodes; i++) {
+            let gx = centerX + (nodeX[i] - centerX) * (glowR / r);
+            let gy = centerY + (nodeY[i] - centerY) * (glowR / r);
+            p.curveVertex(gx, gy);
+          }
+          p.endShape(p.CLOSE);
+        }
+
+        // main star
+        let alpha = map(currentOpacity, 20, 100, 20, 100);
+        p.fill(currentHue, 80, 100, alpha);
         p.beginShape();
         for (let i = 0; i < nodes; i++) {
           p.curveVertex(nodeX[i], nodeY[i]);
@@ -443,6 +459,10 @@
           p.colorMode(p.HSB, 360, 100, 100, 100);
         }
       };
+
+      function map(v, a, b, c, d) {
+        return c + (v - a) / (b - a) * (d - c);
+      }
     });
   </script>
 </body>

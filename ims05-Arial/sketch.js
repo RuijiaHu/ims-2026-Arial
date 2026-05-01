@@ -146,7 +146,9 @@ function setup() {
         data.size,
         true,
         data.hue,
-        data.initials
+        data.initials,
+        data.opacity ?? 80,
+        data.glow    ?? 10
       )
     );
   });
@@ -298,38 +300,41 @@ function windowResized() {
 
 // ── Star class ────────────────────────────────────────────────────────────────
 class Star {
-  // hue and initials are optional — only used when star comes from Firebase
-  constructor(x, y, r = 45, isMini = false, hue = null, initials = "") {
-    this.centerX = x;
-    this.centerY = y;
+  // hue, initials, opacity, glow are optional — only used when star comes from Firebase
+  constructor(x, y, r = 45, isMini = false, hue = null, initials = "", opacity = 80, glow = 10) {
+    this.centerX  = x;
+    this.centerY  = y;
     this.baseRadius = r;
-    this.radius = r;
-    this.isMini = isMini;
+    this.radius   = r;
+    this.isMini   = isMini;
     this.initials = initials;
+    this.opacity  = opacity;  // 20–100
+    this.glow     = glow;     // 0–40
 
     this.rotAngle = -90;
-    this.accelX = 0;
-    this.accelY = 0;
+    this.accelX   = 0;
+    this.accelY   = 0;
 
-    this.nodes = 5;
+    this.nodes      = 5;
     this.nodeStartX = new Array(5).fill(0);
     this.nodeStartY = new Array(5).fill(0);
-    this.nodeX = new Array(5).fill(0);
-    this.nodeY = new Array(5).fill(0);
-    this.angle = new Array(5).fill(0);
+    this.nodeX      = new Array(5).fill(0);
+    this.nodeY      = new Array(5).fill(0);
+    this.angle      = new Array(5).fill(0);
 
     this.frequency = Array.from({ length: 5 }, () => random(5, 12));
     this.organicConstant = 1.0;
 
     this.springing = isMini ? random(0.0005, 0.0015) : 0.0009;
-    this.damping = 0.98;
+    this.damping   = 0.98;
 
     this.noiseOffsetX = random(10000);
     this.noiseOffsetY = random(10000);
-    this.noiseSpeed = isMini ? random(0.002, 0.007) : 0.004;
+    this.noiseSpeed   = isMini ? random(0.002, 0.007) : 0.004;
 
     if (isMini) {
-      this.starColor = color(hue !== null ? hue : random(360), 80, 100);
+      this.starHue  = hue !== null ? hue : random(360);
+      this.starColor = color(this.starHue, 80, 100);
     }
   }
 
@@ -369,8 +374,8 @@ class Star {
 
     this.centerX += this.accelX;
     this.centerY += this.accelY;
-    this.accelX *= this.damping;
-    this.accelY *= this.damping;
+    this.accelX  *= this.damping;
+    this.accelY  *= this.damping;
 
     this.organicConstant = 1 - (abs(this.accelX) + abs(this.accelY)) * 0.1;
 
@@ -406,7 +411,28 @@ class Star {
     curveTightness(this.organicConstant);
 
     if (this.isMini) {
-      fill(this.starColor);
+      // glow layers — larger translucent copies drawn behind the main star
+      //AI Claude
+      if (this.glow > 0) {
+        let glowLayers = floor(this.glow / 8) + 1;
+        for (let g = glowLayers; g > 0; g--) {
+          let scale     = 1 + g * (this.glow * 0.008);
+          let glowAlpha = (this.opacity / 100) * 25 * (1 - g / (glowLayers + 1));
+          fill(color(this.starHue, 70, 100, glowAlpha));
+          beginShape();
+          for (let i = 0; i < this.nodes; i++) {
+            let gx = this.centerX + (this.nodeX[i] - this.centerX) * scale;
+            let gy = this.centerY + (this.nodeY[i] - this.centerY) * scale;
+            curveVertex(gx, gy);
+          }
+          endShape(CLOSE);
+        }
+      }
+
+      // main star with user-chosen opacity
+      let alpha = map(this.opacity, 20, 100, 20, 100);
+      fill(color(this.starHue, 80, 100, alpha));
+
     } else {
       fill(lerpColor(color('red'), color('yellow'), this.organicConstant));
     }
